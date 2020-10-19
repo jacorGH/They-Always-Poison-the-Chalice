@@ -1,9 +1,10 @@
-export default class Card {
-    constructor(scene) {
-        this.render = (x, y, sprite) => {
-            let card = scene.add.image(x, y, sprite).setScale(0.5, 0.5).setInteractive();
-            scene.input.setDraggable(card);
-            return card;
-        }
+export default class Card extends Phaser.GameObjects.Image {
+    constructor(scene, x, y, texture, scale, cardType) {
+        super(scene, x, y, texture);
+        this.cardType = cardType
+        this.setInteractive();
+        this.setScale(scale, scale)
+        scene.add.existing(this);
+        scene.input.setDraggable(this);
     }
 }

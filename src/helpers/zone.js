@@ -1,14 +1,10 @@
-export default class Zone {
-    constructor(scene) {
-        this.renderZone = () => {
-            let dropZone = scene.add.zone(530, 325, 600, 400).setRectangleDropZone(600, 400);
-            dropZone.setData({ cards: 0 });
-            return dropZone;
-        };
-        this.renderOutline = (dropZone) => {
-            let dropZoneOutline = scene.add.graphics();
-            dropZoneOutline.lineStyle(4, 0x777700);
-            dropZoneOutline.strokeRect(dropZone.x - dropZone.input.hitArea.width/2, dropZone.y - dropZone.input.hitArea.height/2, dropZone.input.hitArea.width, dropZone.input.hitArea.height)
-        }
+export default class Zone extends Phaser.GameObjects.Zone {
+    constructor(scene, x, y, width, height, img) {
+        super(scene, x, y, width, height);
+        this.isFull = false;
+        this.setInteractive();
+        this.holder = scene.add.image(x, y, img).setScale(0.65, 0.65);
+        scene.add.zone(x, y, width, height).setRectangleDropZone(width, height);
+        scene.add.existing(this);
     }
 }
