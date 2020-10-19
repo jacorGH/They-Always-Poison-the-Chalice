@@ -1,6 +1,8 @@
 import Card from '../helpers/card';
 import Zone from '../helpers/zone';
 
+// Future Goals: Pack Images into JSON
+
 // Background: Table, Back of Cards, Zone zone
 import tableImg from '../assets/Table.png';
 import backImg from '../assets/cards/BackCard.png';
@@ -59,17 +61,36 @@ export  default class Game extends Phaser.Scene {
 	create() {
 		let self = this;
 
+		// Gets canvas width/height
 		this.WIDTH = this.sys.game.canvas.width;
 		this.HEIGHT = this.sys.game.canvas.height;
-		this.MAX_HAND = 7; // Set MAX hand size
 
-		// Converts degrees to Radians
+		// Set MAX hand size
+		this.MAX_HAND = 7; 
+
+		// Add to hand size check on turnState change
+		this.handFull = false;
+
+
+		// Add a state enum
+		
+
+		// Func Converts degrees to Radians
 		this.deg2rad = (deg) => {
 			return deg * Math.PI / 180;
 		}
-		// Converts Radians to degrees
+		// Func Converts Radians to degrees
 		this.rad2deg = (rad) => {
 			return rad * 180 / Math.PI;
+		}
+
+		// Func Remove item from array
+		this.removeItem = (array, item) => {
+			let index = array.indexOf(item);
+			if (index > -1) {
+				array.splice(index, 1);
+			}
+			//console.log(array);
 		}
 
 		// Add table background
@@ -156,34 +177,44 @@ export  default class Game extends Phaser.Scene {
 
 		// Func to position cards in the hand
 		this.updateHand = () => {
-			this.centerCardOval = [this.WIDTH*0.5, this.HEIGHT*1.3];
-			this.horRad = this.WIDTH*0.45;
-			this.verRad = this.HEIGHT*0.4;
-			this.angle = this.deg2rad(90) - 0.5;
+			let centerCardOval = [this.WIDTH*0.5, this.HEIGHT*1.29];
+			let horRad = this.WIDTH*0.45;
+			let verRad = this.HEIGHT*0.4;
+			let angle = this.deg2rad(90) - 0.5;
 			for (let i = 0; i < this.hand.length; i++) {
-				console.log((90 + this.rad2deg(this.angle))/4);
-				this.ovalAngleVector = [this.horRad * Math.cos(this.angle), - this.verRad * Math.sin(this.angle)];
-				this.cardPos = [this.centerCardOval[0] + this.ovalAngleVector[0], this.centerCardOval[1] + this.ovalAngleVector[1]]
-				//console.log(`PosX: ${this.cardPos[0]}, PosY: ${this.cardPos[1]}`)
-				this.hand[i].x = this.cardPos[0];
-				this.hand[i].y = this.cardPos[1];
-				this.hand[i].rotation = 85 - this.angle
-				this.angle += 0.175;
+				let ovalAngleVector = [horRad * Math.cos(angle), - verRad * Math.sin(angle)];
+				let cardPos = [centerCardOval[0] + ovalAngleVector[0], centerCardOval[1] + ovalAngleVector[1]]
+				this.tweens.add({
+					targets		: this.hand[i],
+					x			: cardPos[0],
+					y			: cardPos[1],
+					//rotation	: (-44.78 - this.angle/2),
+					ease		: 'Linear',
+					duration	: 1000,
+				});
+				// this.hand[i].x = cardPos[0];
+				// this.hand[i].y = cardPos[1];
+				this.hand[i].rotation = (44.78 - angle/2);
+				angle += 0.177;
 			}
 		}
 
 		// Func to add a card to hand
+		this.angle = this.deg2rad(90) - 0.5;
 		this.drawCards = () => {
 			if (this.hand.length < this.MAX_HAND) {
-				// let card = new Card(this, (158 + (this.hand.length*100)), 700, this.deck[0], 0.5, 'add');
 				let card = new Card(this, this.WIDTH - 250, (this.HEIGHT/2 - this.HEIGHT/16), this.deck[0], 0.5, 'add');
 				this.deck.shift();
 				this.hand.push(card);
 				this.updateHand();
 			} 
 			if (this.hand.length == this.MAX_HAND) {
+				// Move this to 
 				this.deckImg.setAlpha(0.75);
 				this.drawText.setVisible(false);
+				// Leave this
+				this.updateHand();
+				this.handFull = true;
 			}
 		}
 		
@@ -245,6 +276,7 @@ export  default class Game extends Phaser.Scene {
 			if (!dropped) {
 				gameObject.x = gameObject.input.dragStartX;
 				gameObject.y = gameObject.input.dragStartY;
+				this.updateHand();
 			}
 		})
 
@@ -253,6 +285,7 @@ export  default class Game extends Phaser.Scene {
 			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
 				gameObject.x = dragX;
 				gameObject.y = dragY;
+				gameObject.rotation = 0;
 	;
 			}
 			if (gameObject.cardType) {
@@ -288,6 +321,7 @@ export  default class Game extends Phaser.Scene {
 				dropZone.setScale(0.7)
 				gameObject.x = dropZone.x;
 				gameObject.y = dropZone.y;
+				gameObject.rotation = dropZone.rotation;
 				gameObject.disableInteractive();
 				this.children.moveTo(gameObject, 2);
 				dropZone.isFull = true;
@@ -306,6 +340,8 @@ export  default class Game extends Phaser.Scene {
 					ease		: 'Bounce',
 					duration	: 600,
 				});
+				this.removeItem(this.hand, gameObject);
+				this.updateHand();
 				console.log(dropZone.effect);
 				//console.log(gameObject);
 			} else {
