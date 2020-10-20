@@ -182,19 +182,25 @@ export  default class Game extends Phaser.Scene {
 			let verRad = this.HEIGHT*0.4;
 			let angle = this.deg2rad(90) - 0.5;
 			for (let i = 0; i < this.hand.length; i++) {
+				//this.hand[i].setTexture('back');
 				let ovalAngleVector = [horRad * Math.cos(angle), - verRad * Math.sin(angle)];
-				let cardPos = [centerCardOval[0] + ovalAngleVector[0], centerCardOval[1] + ovalAngleVector[1]]
+				let cardPos = [centerCardOval[0] + ovalAngleVector[0], centerCardOval[1] + ovalAngleVector[1]];
+				console.log(this.hand[i]);
 				this.tweens.add({
 					targets		: this.hand[i],
 					x			: cardPos[0],
 					y			: cardPos[1],
-					//rotation	: (-44.78 - this.angle/2),
+					texture		: 'acid',
+					rotation	: (0.8 - angle/2),
+					scaleX		: (0.5),
 					ease		: 'Linear',
 					duration	: 1000,
 				});
+				console.log(this.hand[i]);
 				// this.hand[i].x = cardPos[0];
 				// this.hand[i].y = cardPos[1];
-				this.hand[i].rotation = (44.78 - angle/2);
+				// this.hand[i].rotation = (0.8 - angle/2);
+				// this.hand[i].rotation = (44.78 - angle/2);
 				angle += 0.177;
 			}
 		}
@@ -204,6 +210,8 @@ export  default class Game extends Phaser.Scene {
 		this.drawCards = () => {
 			if (this.hand.length < this.MAX_HAND) {
 				let card = new Card(this, this.WIDTH - 250, (this.HEIGHT/2 - this.HEIGHT/16), this.deck[0], 0.5, 'add');
+				card.scaleX = -0.5
+				console.log(card.cardEffect)
 				this.deck.shift();
 				this.hand.push(card);
 				this.updateHand();
