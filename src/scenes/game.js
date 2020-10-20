@@ -71,10 +71,6 @@ export  default class Game extends Phaser.Scene {
 		// Add to hand size check on turnState change
 		this.handFull = false;
 
-
-		// Add a state enum
-		
-
 		// Func Converts degrees to Radians
 		this.deg2rad = (deg) => {
 			return deg * Math.PI / 180;
@@ -185,7 +181,7 @@ export  default class Game extends Phaser.Scene {
 				//this.hand[i].setTexture('back');
 				let ovalAngleVector = [horRad * Math.cos(angle), - verRad * Math.sin(angle)];
 				let cardPos = [centerCardOval[0] + ovalAngleVector[0], centerCardOval[1] + ovalAngleVector[1]];
-				console.log(this.hand[i]);
+				//console.log(this.hand[i]);
 				this.tweens.add({
 					targets		: this.hand[i],
 					x			: cardPos[0],
@@ -204,14 +200,18 @@ export  default class Game extends Phaser.Scene {
 				angle += 0.177;
 			}
 		}
-
+		// Add to card after restructure
+		this.states = Object.freeze({
+            'deckToHand': 0,
+            'inHand': 1,
+        })
 		// Func to add a card to hand
 		this.angle = this.deg2rad(90) - 0.5;
 		this.drawCards = () => {
 			if (this.hand.length < this.MAX_HAND) {
 				let card = new Card(this, this.WIDTH - 250, (this.HEIGHT/2 - this.HEIGHT/16), this.deck[0], 0.5, 'add');
 				card.scaleX = -0.5
-				console.log(card.cardEffect)
+				console.log(card.states['deckToHand'])
 				this.deck.shift();
 				this.hand.push(card);
 				this.updateHand();
