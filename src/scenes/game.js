@@ -199,12 +199,21 @@ export  default class Game extends Phaser.Scene {
 		this.updateHand = () => {
 			let cards = 0
 			for (let i = 0; i < this.hand.length; i++) {
-				let angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - cards)-0.05;
+				let angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - cards)-0.06;
 				let ovalAngleVector = [this.horRad * Math.cos(angle), - this.verRad * Math.sin(angle)];
 				let cardPos = [this.centerCardOval[0] + ovalAngleVector[0], this.centerCardOval[1] + ovalAngleVector[1]];
-				this.hand[i].x = cardPos[0];
-				this.hand[i].y = cardPos[1];
-				this.hand[i].rotation = (0.8 - angle/2);
+				this.tweens.add({
+					targets			: this.hand[i],
+					x				: cardPos[0],
+					y				: cardPos[1],
+					rotation		: (0.8 - angle/2),
+					// scaleX			: (-0.5),
+					ease			: 'Linear',
+					duration		: 400,
+				})
+				// this.hand[i].x = cardPos[0];
+				// this.hand[i].y = cardPos[1];
+				// this.hand[i].rotation = (0.8 - angle/2);
 				angle += this.cardSpread;
 				cards += 1
 			}
@@ -216,7 +225,7 @@ export  default class Game extends Phaser.Scene {
 		}
 		// Func to transition card from deck to hand
 		this.deckToHand = (card) => {
-			this.angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - this.hand.length);
+			this.angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - this.hand.length)-0.06;
 			this.hand.push(card);
 			let ovalAngleVector = [this.horRad * Math.cos(this.angle), - this.verRad * Math.sin(this.angle)];
 			let cardPos = [this.centerCardOval[0] + ovalAngleVector[0], this.centerCardOval[1] + ovalAngleVector[1]];
@@ -226,7 +235,7 @@ export  default class Game extends Phaser.Scene {
 				x				: cardPos[0],
 				y				: cardPos[1],
 				rotation		: (0.8 - this.angle/2),
-				scaleX			: (-0.5),
+				scaleX			: (0.5),
 				ease			: 'Linear',
 				duration		: 600,
 				onComplete		: this.updateHand,
@@ -243,23 +252,27 @@ export  default class Game extends Phaser.Scene {
 		// Func to swap card texture
 		this.flipCard = (card) => {
 			card.setTexture(card.cardEffect);
+			card.scaleY = 0.5;
 		}
 
-		// Add to card after restructure
+		// Func to set card interactive
+		this.activeCard = (card) => {
+			card.setInteractive();
+		}
+
+
+		// Card States - Note: Add to card after restructure
 		this.states = Object.freeze({
             'deckToHand': 0,
             'inHand': 1,
 		})
-		
-		
 
 		// Func to add a card to hand
 		this.drawCard = () => {
 			if (this.hand.length < this.MAX_HAND) {
-				let card = new Card(this, this.WIDTH - 250, (this.HEIGHT/2 - this.HEIGHT/16), this.deck[0], 0.5, 'add').disableInteractive();
+				let card = new Card(this, this.WIDTH - 250, (this.HEIGHT/2 - this.HEIGHT/16), this.deck[0], -0.5, 'add').disableInteractive();
 				//console.log(card.texture)
 				card.setTexture('back')
-				card.flipX = true;
 				card.index = this.hand.length
 				this.deck.shift();
 				// this.hand.push(card);
@@ -273,7 +286,8 @@ export  default class Game extends Phaser.Scene {
 				this.updateHand();
 				this.handFull = true;
 				this.hand.forEach(card =>{
-					card.setInteractive();
+					this.time.delayedCall(300, this.activeCard, [card], this);
+					// card.setInteractive();
 				})
 			}
 		}
@@ -326,9 +340,39 @@ export  default class Game extends Phaser.Scene {
 		this.addDeck();
 		this.addZones();
 
+
+
+		// Change card size on hover
+		this.input.on('gameobjectover', (pointer, gameObject) => {
+			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
+				this.moveY = gameObject.y;
+				this.tweens.add({
+					targets		: gameObject,
+					scale		: 0.8,
+					ease		: 'Quad',
+					y			: this.moveY - 50,
+					duration	: 400,
+				});
+				this.children.bringToTop(gameObject);
+			}
+		})
+		this.input.on('gameobjectout', (pointer, gameObject) => {
+			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
+				this.tweens.add({
+					targets		: gameObject,
+					scale		: 0.5,
+					ease		: 'Back.easeOut',
+					y			: this.moveY,
+					duration	: 700,
+					// onComplete	: this.updateHand,
+				});
+			}
+		})
+
 		// Change image tint on drag start
 		this.input.on('dragstart', (pointer, gameObject) => {
 			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
+				console.log(gameObject)
 				gameObject.setTint(0xffff00).setAlpha(0.95);
 				self.children.bringToTop(gameObject);
 				//this.removeItem(this.hand, gameObject);
