@@ -180,8 +180,10 @@ export  default class Game extends Phaser.Scene {
 		this.centerCardOval = [this.WIDTH*0.5, this.HEIGHT*1.29];
 		this.horRad = this.WIDTH*0.45;
 		this.verRad = this.HEIGHT*0.4;
-		this.angle = this.deg2rad(90) - 0.5;
-		
+		this.targetRot = (0.8 - this.angle/2);
+		this.cardSpread = 0.177;
+		// this.cardSpread = 0.177;
+
 		// Func to build shuffled deck
 		this.addDeck = () => {
 			Object.entries(this.addImgs).forEach(([key, value]) => {
@@ -195,29 +197,16 @@ export  default class Game extends Phaser.Scene {
 
 		// Func to position cards in the hand
 		this.updateHand = () => {
-			let centerCardOval = [this.WIDTH*0.5, this.HEIGHT*1.29];
-			let horRad = this.WIDTH*0.45;
-			let verRad = this.HEIGHT*0.4;
-			let angle = this.deg2rad(90) - 0.5;
+			let cards = 0
 			for (let i = 0; i < this.hand.length; i++) {
-				//this.hand[i].setTexture('back');
-				let ovalAngleVector = [horRad * Math.cos(angle), - verRad * Math.sin(angle)];
-				let cardPos = [centerCardOval[0] + ovalAngleVector[0], centerCardOval[1] + ovalAngleVector[1]];
-				//console.log(this.hand[i]);
-				// this.tweens.add({
-				// 	targets		: this.hand[i],
-				// 	x			: cardPos[0],
-				// 	y			: cardPos[1],
-				// 	rotation	: (0.8 - angle/2),
-				// 	scaleX		: (0.5),
-				// 	ease		: 'Linear',
-				// 	duration	: 800,
-				// });
-				//console.log(this.hand[i]);
+				let angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - cards)-0.05;
+				let ovalAngleVector = [this.horRad * Math.cos(angle), - this.verRad * Math.sin(angle)];
+				let cardPos = [this.centerCardOval[0] + ovalAngleVector[0], this.centerCardOval[1] + ovalAngleVector[1]];
 				this.hand[i].x = cardPos[0];
 				this.hand[i].y = cardPos[1];
 				this.hand[i].rotation = (0.8 - angle/2);
-				angle += 0.177;
+				angle += this.cardSpread;
+				cards += 1
 			}
 			if (this.checkCups()) {
 				this.hand.forEach(card => {
@@ -225,11 +214,13 @@ export  default class Game extends Phaser.Scene {
 				});
 			}
 		}
-
 		// Func to transition card from deck to hand
 		this.deckToHand = (card) => {
+			this.angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - this.hand.length);
+			this.hand.push(card);
 			let ovalAngleVector = [this.horRad * Math.cos(this.angle), - this.verRad * Math.sin(this.angle)];
 			let cardPos = [this.centerCardOval[0] + ovalAngleVector[0], this.centerCardOval[1] + ovalAngleVector[1]];
+			this.time.delayedCall( 300, this.flipCard, [ card ], this);
 			this.tweens.add({
 				targets			: card,
 				x				: cardPos[0],
@@ -238,20 +229,19 @@ export  default class Game extends Phaser.Scene {
 				scaleX			: (-0.5),
 				ease			: 'Linear',
 				duration		: 600,
-				onComplete		: this.flipCard,
-				onCompleteParams	: [ card ],
+				onComplete		: this.updateHand,
 			});
 			//console.log(card);
 			// card.x = cardPos[0];
 			// card.y = cardPos[1];
 			// card.rotation = (0.8 - this.angle/2);
 			// card.rotation = (44.78 - this.angle/2);
-			this.angle += 0.177;
+			this.angle += this.cardSpread;
 		}
 
 
 		// Func to swap card texture
-		this.flipCard = (tween, targets, card) => {
+		this.flipCard = (card) => {
 			card.setTexture(card.cardEffect);
 		}
 
@@ -272,7 +262,7 @@ export  default class Game extends Phaser.Scene {
 				card.flipX = true;
 				card.index = this.hand.length
 				this.deck.shift();
-				this.hand.push(card);
+				// this.hand.push(card);
 				this.deckToHand(card);
 			} 
 			if (this.hand.length == this.MAX_HAND) {
@@ -280,6 +270,7 @@ export  default class Game extends Phaser.Scene {
 				this.deckImg.setAlpha(0.75);
 				this.drawText.setVisible(false);
 				// Leave this
+				this.updateHand();
 				this.handFull = true;
 				this.hand.forEach(card =>{
 					card.setInteractive();
