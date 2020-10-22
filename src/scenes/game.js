@@ -114,7 +114,8 @@ export  default class Game extends Phaser.Scene {
 		// creates an interactive text to draw cards
 		this.deckImg = this.add.image(this.WIDTH - 250, (this.HEIGHT/2 - this.HEIGHT/16), 'back').setScale(0.5);
 		this.drawText = this.add.text(this.WIDTH - 298, (this.HEIGHT/2 - this.HEIGHT/16 - 10), ['DRAW CARD']).setFontSize(18).setFontFamily('"trebuchet MS"').setColor('#777700').setInteractive();
-		
+		// this.drawText.setVisible(false);
+
 		// on click draw card
 		this.drawText.on('pointerdown', () => {
 			this.drawText.setColor('#ffff00');
@@ -207,15 +208,14 @@ export  default class Game extends Phaser.Scene {
 					x				: cardPos[0],
 					y				: cardPos[1],
 					rotation		: (0.8 - angle/2),
-					// scaleX			: (-0.5),
 					ease			: 'Linear',
 					duration		: 400,
 				})
+				angle += this.cardSpread;
+				cards += 1
 				// this.hand[i].x = cardPos[0];
 				// this.hand[i].y = cardPos[1];
 				// this.hand[i].rotation = (0.8 - angle/2);
-				angle += this.cardSpread;
-				cards += 1
 			}
 			if (this.checkCups()) {
 				this.hand.forEach(card => {
@@ -225,6 +225,7 @@ export  default class Game extends Phaser.Scene {
 		}
 		// Func to transition card from deck to hand
 		this.deckToHand = (card) => {
+			// console.log(card.index)
 			this.angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - this.hand.length)-0.06;
 			this.hand.push(card);
 			let ovalAngleVector = [this.horRad * Math.cos(this.angle), - this.verRad * Math.sin(this.angle)];
@@ -240,7 +241,7 @@ export  default class Game extends Phaser.Scene {
 				duration		: 600,
 				onComplete		: this.updateHand,
 			});
-			//console.log(card);
+			console.log(card.y);
 			// card.x = cardPos[0];
 			// card.y = cardPos[1];
 			// card.rotation = (0.8 - this.angle/2);
@@ -296,7 +297,7 @@ export  default class Game extends Phaser.Scene {
 		this.addCups = () => {
 			this.randShuffle(this.cupImgs);
 			this.cupImgs.forEach(img => {
-				let cup = new Card(this, (((this.WIDTH/2) - (this.cupImgs.length/2*100)) + (this.cups.length*115)), (this.HEIGHT/2 - this.HEIGHT/16), img, 0.5, 'cup');
+				let cup = new Card(this, (((this.WIDTH/2) - (this.cupImgs.length/2*100)) + (this.cups.length*115)), (this.HEIGHT/2 - this.HEIGHT/8), img, 0.5, 'cup');
 				// let cup = new Card(this, (300 + (this.cups.length*115)), 320, img, 0.5, 'cup');
 				//console.log(cup.width)
 				this.cups.push(cup);
@@ -308,14 +309,14 @@ export  default class Game extends Phaser.Scene {
 		this.addZones = () => {
 			for (let i = 0; i < this.cupImgs.length; i++) {
 				//let zone = new Zone(this, (300 + (i*115)), 420, 150, 200, 'placeHolder');
-				let zone = this.add.image((((this.WIDTH/2) - (this.cupImgs.length/2*100)) + (i*115)), (this.HEIGHT/1.715), 'placeHolder').setScale(0.5).setInteractive();
+				let zone = this.add.image((((this.WIDTH/2) - (this.cupImgs.length/2*100)) + (i*115)), (this.HEIGHT/1.9), 'placeHolder').setScale(0.5).setInteractive();
 				zone.input.dropZone = true;
 				zone.name = this.cupImgs[i];
 				zone.effect = '';
 				zone.isZone = true;
 				this.children.moveTo(zone,2);
 				this.drops.push(zone);
-				console.log(zone.name);
+				// console.log(zone.name);
 			}
 		}
 
@@ -341,30 +342,34 @@ export  default class Game extends Phaser.Scene {
 		this.addZones();
 
 
-
 		// Change card size on hover
 		this.input.on('gameobjectover', (pointer, gameObject) => {
-			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
+			if ((gameObject.cardType) && (gameObject.cardType === 'add')) {
 				this.moveY = gameObject.y;
+				// console.log('Over obj')
 				this.tweens.add({
 					targets		: gameObject,
 					scale		: 0.8,
 					ease		: 'Quad',
-					y			: this.moveY - 50,
+					// y			: this.moveY - 50,
 					duration	: 400,
 				});
 				this.children.bringToTop(gameObject);
 			}
 		})
+
+		// Reset card size on off
 		this.input.on('gameobjectout', (pointer, gameObject) => {
-			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
+			if ((gameObject.cardType) && (gameObject.cardType === 'add') && (gameObject.inHand)) {
+				// this.updateHand();
+				console.log('gameobject out')
 				this.tweens.add({
 					targets		: gameObject,
 					scale		: 0.5,
 					ease		: 'Back.easeOut',
-					y			: this.moveY,
+					// y			: this.moveY,
 					duration	: 700,
-					// onComplete	: this.updateHand,
+					onComplete	: this.updateHand,
 				});
 			}
 		})
@@ -372,15 +377,17 @@ export  default class Game extends Phaser.Scene {
 		// Change image tint on drag start
 		this.input.on('dragstart', (pointer, gameObject) => {
 			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
-				console.log(gameObject)
-				gameObject.setTint(0xffff00).setAlpha(0.95);
+				// console.log(gameObject)
+				// gameObject.setTint(0xffff00).setAlpha(0.95);
 				self.children.bringToTop(gameObject);
 				//this.removeItem(this.hand, gameObject);
 			}
 		})
+
 		// Change image tint back on drag end
 		this.input.on('dragend', (pointer, gameObject, dropped) => {
-			gameObject.setTint();
+			// console.log('Drag end')
+			// gameObject.setTint();
 			// Check if the game object was droppen in a drop zone
 			if (!dropped) {
 				// this.deckToHand(gameObject);
@@ -393,10 +400,17 @@ export  default class Game extends Phaser.Scene {
 		// Makes items draggable
 		this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
 			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
+				if (gameObject.y < 500) {
+					this.tweens.add({
+						targets		: gameObject,
+						scale		: 0.6,
+						ease		: 'Linear',
+						duration	: 300,
+					})
+				}
 				gameObject.x = dragX;
 				gameObject.y = dragY;
 				gameObject.rotation = 0;
-	;
 			}
 			if (gameObject.cardType) {
 				//console.log(`CardType: ${gameObject.cardType}`);
@@ -428,35 +442,43 @@ export  default class Game extends Phaser.Scene {
 		// Locks card to dropZone Neededs to be set to multiple zones one for each cup
 		this.input.on('drop', (pointer, gameObject, dropZone) => {
 			if (!dropZone.isFull && ((gameObject.cardType) && (gameObject.cardType == 'add'))) {
+				gameObject.inHand = false;
 				dropZone.setScale(0.7)
 				gameObject.x = dropZone.x;
 				gameObject.y = dropZone.y;
 				gameObject.rotation = dropZone.rotation;
 				gameObject.disableInteractive();
-				this.children.moveTo(gameObject, 2);
+				this.children.moveTo(gameObject, 8);
 				dropZone.isFull = true;
-				dropZone.setTexture('back')
+				gameObject.setTexture('back')
 				dropZone.effect = gameObject.texture.key;
-				this.children.moveTo(dropZone, 4)
+				// this.children.moveTo(dropZone, 4)
+				this.removeItem(this.hand, gameObject);
 				this.tweens.add({
 					targets		: dropZone,
 					scale		: 0.65,
 					ease		: 'Linear',
-					duration	: 500,
+					duration	: 400,
 				});
 				this.tweens.add({
 					targets		: dropZone,
 					scale		: 0.5,
 					ease		: 'Bounce',
-					duration	: 600,
+					duration	: 500,
 				});
-				this.removeItem(this.hand, gameObject);
+				this.tweens.add({
+					targets		: gameObject,
+					scale		: 0.5,
+					ease		: 'Bounce',
+					duration	: 800,
+				});
 				this.updateHand();
 				console.log(dropZone.effect);
 				//console.log(gameObject);
 			} else {
 				gameObject.x = gameObject.input.dragStartX;
 				gameObject.y = gameObject.input.dragStartY;
+				this.updateHand();
 			}
 		})
 
