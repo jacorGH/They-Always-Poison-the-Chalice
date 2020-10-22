@@ -265,7 +265,10 @@ export  default class Game extends Phaser.Scene {
 		// Card States - Note: Add to card after restructure
 		this.states = Object.freeze({
             'deckToHand': 0,
-            'inHand': 1,
+            'inHand'	: 1,
+            'inMotion'	: 2,
+			'inPlay'	: 3,
+			'inDiscard'	: 4,
 		})
 
 		// Func to add a card to hand
