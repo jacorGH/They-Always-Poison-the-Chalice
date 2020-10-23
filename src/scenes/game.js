@@ -200,22 +200,41 @@ export  default class Game extends Phaser.Scene {
 		this.updateHand = () => {
 			let cards = 0
 			for (let i = 0; i < this.hand.length; i++) {
-				let angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - cards)-0.06;
-				let ovalAngleVector = [this.horRad * Math.cos(angle), - this.verRad * Math.sin(angle)];
-				let cardPos = [this.centerCardOval[0] + ovalAngleVector[0], this.centerCardOval[1] + ovalAngleVector[1]];
-				this.tweens.add({
-					targets			: this.hand[i],
-					x				: cardPos[0],
-					y				: cardPos[1],
-					rotation		: (0.8 - angle/2),
-					ease			: 'Linear',
-					duration		: 400,
-				})
-				angle += this.cardSpread;
-				cards += 1
-				// this.hand[i].x = cardPos[0];
-				// this.hand[i].y = cardPos[1];
-				// this.hand[i].rotation = (0.8 - angle/2);
+				if (this.hand[i].state === 'inHand') {
+					let angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - cards)-0.06;
+					let ovalAngleVector = [this.horRad * Math.cos(angle), - this.verRad * Math.sin(angle)];
+					let cardPos = [this.centerCardOval[0] + ovalAngleVector[0], this.centerCardOval[1] + ovalAngleVector[1]];
+					this.tweens.add({
+						targets			: this.hand[i],
+						x				: cardPos[0],
+						y				: cardPos[1],
+						rotation		: (0.8 - angle/2),
+						ease			: 'Linear',
+						duration		: 400,
+						index			: i,
+						// state			: 'inHand'
+					})
+					angle += this.cardSpread;
+					cards += 1;
+					// this.hand[i].x = cardPos[0];
+					// this.hand[i].y = cardPos[1];
+					// this.hand[i].rotation = (0.8 - angle/2);
+				} else {
+					let angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - cards)-0.06;
+					let ovalAngleVector = [this.horRad * Math.cos(angle), - this.verRad * Math.sin(angle)];
+					let cardPos = [this.centerCardOval[0] + ovalAngleVector[0], this.centerCardOval[1] + ovalAngleVector[1]];
+					this.tweens.add({
+						targets			: this.hand[i],
+						x				: cardPos[0],
+						y				: (cardPos[1] - 50),
+						rotation		: (0.8 - angle/2),
+						ease			: 'Linear',
+						duration		: 400,
+						// state			: 'inHand'
+					})
+					angle += this.cardSpread;
+					cards += 1;
+				}
 			}
 			if (this.checkCups()) {
 				this.hand.forEach(card => {
@@ -223,10 +242,11 @@ export  default class Game extends Phaser.Scene {
 				});
 			}
 		}
+
 		// Func to transition card from deck to hand
 		this.deckToHand = (card) => {
-			// console.log(card)
-			this.hand.push(card);
+			// console.log(card.state);
+			card.state = 'inHand';
 			this.angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - this.hand.length)-0.06;
 			let ovalAngleVector = [this.horRad * Math.cos(this.angle), - this.verRad * Math.sin(this.angle)];
 			let cardPos = [this.centerCardOval[0] + ovalAngleVector[0], this.centerCardOval[1] + ovalAngleVector[1]];
@@ -241,7 +261,6 @@ export  default class Game extends Phaser.Scene {
 				duration		: 600,
 				onComplete		: this.updateHand,
 			});
-			// console.log(card);
 			this.angle += this.cardSpread;
 		}
 
@@ -255,17 +274,19 @@ export  default class Game extends Phaser.Scene {
 		// Func to set card interactive
 		this.activeCard = (card) => {
 			card.setInteractive();
+			this.input.setDraggable(card);
 		}
 
 
 		// Func to add a card to hand
 		this.drawCard = () => {
 			if (this.hand.length < this.MAX_HAND) {
-				let card = new Card(this, this.WIDTH - 250, (this.HEIGHT/2 - this.HEIGHT/16), this.deck[0], -0.5, 'add').disableInteractive();
+				let card = new Card(this, this.WIDTH - 250, (this.HEIGHT/2 - this.HEIGHT/16), this.deck[0], -0.5, 'add', false);
 				//console.log(card.texture)
 				card.setTexture('back');
 				card.index = this.hand.length;
 				this.deck.shift();
+				this.hand.push(card);
 				card.state = 'deckToHand';
 				// this.hand.push(card);
 				// this.deckToHand(card);
@@ -288,7 +309,7 @@ export  default class Game extends Phaser.Scene {
 		this.addCups = () => {
 			this.randShuffle(this.cupImgs);
 			this.cupImgs.forEach(img => {
-				let cup = new Card(this, (((this.WIDTH/2) - (this.cupImgs.length/2*100)) + (this.cups.length*115)), (this.HEIGHT/2 - this.HEIGHT/8), img, 0.5, 'cup');
+				let cup = new Card(this, (((this.WIDTH/2) - (this.cupImgs.length/2*100)) + (this.cups.length*115)), (this.HEIGHT/2 - this.HEIGHT/8), img, 0.5, 'cup', true);
 				// let cup = new Card(this, (300 + (this.cups.length*115)), 320, img, 0.5, 'cup');
 				//console.log(cup.width)
 				this.cups.push(cup);
@@ -332,86 +353,48 @@ export  default class Game extends Phaser.Scene {
 		this.addDeck();
 		this.addZones();
 
-		/*
-		// Change card size on hover
-		this.input.on('gameobjectover', (pointer, gameObject) => {
-			if ((gameObject.cardType) && (gameObject.cardType === 'add')) {
-				this.moveY = gameObject.y;
-				// console.log('Over obj')
-				this.tweens.add({
-					targets		: gameObject,
-					scale		: 0.8,
-					ease		: 'Quad',
-					// y			: this.moveY - 50,
-					duration	: 400,
-				});
-				this.children.bringToTop(gameObject);
-			}
-		})
+		this.stateUpdate = (item) => {
 
-		// Reset card size on off
-		this.input.on('gameobjectout', (pointer, gameObject) => {
-			if ((gameObject.cardType) && (gameObject.cardType === 'add') && (gameObject.inHand)) {
-				// this.updateHand();
-				console.log('gameobject out')
-				this.tweens.add({
-					targets		: gameObject,
-					scale		: 0.5,
-					ease		: 'Back.easeOut',
-					// y			: this.moveY,
-					duration	: 700,
-					onComplete	: this.updateHand,
-				});
-			}
-		})
-		*/
-
+		}
 		// Change image tint on drag start
-		this.input.on('dragstart', (pointer, gameObject) => {
-			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
-				// console.log(gameObject)
-				// gameObject.setTint(0xffff00).setAlpha(0.95);
-				this.children.bringToTop(gameObject);
-				//this.removeItem(this.hand, gameObject);
-			}
-		})
-
-		// Change image tint back on drag end
-		this.input.on('dragend', (pointer, gameObject, dropped) => {
-			// console.log('Drag end')
-			// gameObject.setTint();
-			// Check if the game object was droppen in a drop zone
-			if (!dropped) {
-				// this.deckToHand(gameObject);
-				// gameObject.x = gameObject.input.dragStartX;
-				// gameObject.y = gameObject.input.dragStartY;
-				this.updateHand();
-			}
-		})
+		// this.input.on('dragstart', (pointer, gameObject) => {
+		// 	if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
+		// 		gameObject.state = 'inMotion';
+		// 		//this.removeItem(this.hand, gameObject);
+		// 	}
+		// })
 
 		// Makes items draggable
-		this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
-			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
-				if (gameObject.y < 500) {
-					this.tweens.add({
-						targets		: gameObject,
-						scale		: 0.6,
-						ease		: 'Linear',
-						duration	: 300,
-					})
-				}
-				gameObject.x = dragX;
-				gameObject.y = dragY;
-				gameObject.rotation = 0;
-			}
-			if (gameObject.cardType) {
-				//console.log(`CardType: ${gameObject.cardType}`);
-			}
-		})
+		// this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+		// 	if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
+		// 		if (gameObject.y < 500) {
+		// 			this.tweens.add({
+		// 				targets		: gameObject,
+		// 				scale		: 0.6,
+		// 				ease		: 'Linear',
+		// 				duration	: 300,
+		// 			})
+		// 		}
+		// 		gameObject.x = dragX;
+		// 		gameObject.y = dragY;
+		// 		gameObject.rotation = 0;
+		// 	}
+		// 	if (gameObject.cardType) {
+		// 		//console.log(`CardType: ${gameObject.cardType}`);
+		// 	}
+		// })
+		
+		// Change image tint back on drag end
+		// this.input.on('dragend', (pointer, gameObject, dropped) => {
+		// 	if (!dropped) {
+		// 		gameObject.state = 'toHand';
+		// 	}
+		// })
+
 
 		// Empty zone scale on mouseover
 		this.drops.forEach(zone => {
-			zone.on('pointerover', (pointer) => {
+			zone.on('pointerover', () => {
 				if (!zone.isFull) {
 					this.tweens.add({
 						targets		: zone,
@@ -434,7 +417,6 @@ export  default class Game extends Phaser.Scene {
 		// Locks card to dropZone Neededs to be set to multiple zones one for each cup
 		this.input.on('drop', (pointer, gameObject, dropZone) => {
 			if (!dropZone.isFull && ((gameObject.cardType) && (gameObject.cardType == 'add'))) {
-				gameObject.inHand = false;
 				dropZone.setScale(0.7)
 				gameObject.x = dropZone.x;
 				gameObject.y = dropZone.y;
@@ -478,67 +460,107 @@ export  default class Game extends Phaser.Scene {
 
 	update() {
 
-		// Card States - Note: Add to card after restructure
-		this.states = Object.freeze({
-			'deckToHand': 0,
-			'inHand'	: 1,
-            'onHover'	: 2,
-			'inMotion'	: 3,
-			'toHand'	: 4,
-			'inPlay'	: 5,
-			'inDiscard'	: 6,
-			'inDeck'	: 7,
-		})
-
 		this.children.list.forEach(item => {
-			if ((item.cardType) && (item.cardType === 'add')) {
+			if ((item.cardType) && (item.cardType === 'add') && (item.checkState())) {
 				let card = item;
-				// console.log(card.state)
+
 				switch (card.state){
+
 					case 'deckToHand':
+						console.log('deckToHand')
 						this.deckToHand(card);
-						card.state = 'inHand';
+
+						break;
 					case 'inHand':
 						// Change card size on hover
+						console.log('inHand')
+						this.updateHand();
 						card.on('pointerover', () => {
-							this.moveY = card.y;
+							card.state = 'onHover';
 							this.tweens.add({
 								targets		: card,
 								scale		: 0.8,
 								ease		: 'Quad',
-								// y			: this.moveY - 50,
 								duration	: 400,
-								state		: 'onHover'
 							});
 							this.children.bringToTop(card);
 						})
-
+						break;
 					case 'onHover':
-						// Reset card size on off
+						console.log('onHover')
+						// Reset card size on Hover off
 						card.on('pointerout', () => {
+							card.state = 'inHand';
 							this.tweens.add({
 								targets		: card,
 								scale		: 0.5,
 								ease		: 'Back.easeOut',
-								// y			: this.moveY,
 								duration	: 700,
-								onComplete	: this.updateHand,
-								state		: 'inHand'
 							});
-							// `card.state = 'inHand'
+						})
+						//Change card state on drag start
+						card.on('dragstart', () => {
+							console.log('dragging');
+							card.state = 'inMotion';
+							this.tweens.add({
+								targets		: card,
+								scale		: 0.55,
+								ease		: 'Back.easeOut',
+								duration	: 700,
+							});
+							// this.removeItem(this.hand, gameObject);
 						})
 
+						break;
 					case 'inMotion':
-						// console.log(item.state)
+						console.log('inMotion')
+						card.currentState = '';
+						card.on('drag', (pointer) => {
+							// console.log(pointer.position)
+							this.removeItem(this.hand, card);
+							card.x = pointer.x;
+							card.y = pointer.y;
+							card.rotation = 0;
+						})
+						card.on('dragend', (pointer, dragx, dragy, dropped) => {
+							console.log(dropped);
+							if (!dropped) {
+								card.state = 'toHand';
+								this.tweens.add({
+									targets		: card,
+									scale		: 0.5,
+									ease		: 'Back.easeOut',
+									duration	: 700,
+								});
+								// this.removeItem(this.hand, gameObject);
+							}
+						})
+
+						break;
 					case 'toHand':
-						// console.log(item.state)
-					case 'inPlay':
-						// console.log(item.state)
-					case 'inDiscard':
-						// console.log(item.state)
-					case 'inDeck':
+						console.log('toHand')
+						console.log(card.index)
+						card.state = 'inHand';
+						this.hand.splice(card.index, 0, card);
+						this.updateHand();
 						// console.log(item.state)
 
+						break;
+					case 'inPlay':
+						console.log('inPlay')
+						// console.log(item.state)
+
+						break;
+					case 'inDiscard':
+						console.log('inDiscard')
+						// console.log(item.state)
+
+						break;
+					case 'inDeck':
+						console.log('inDeck')
+						// console.log(item.state)
+
+						break;
 				}
 				// console.log(item);
 			}
