@@ -5,6 +5,7 @@ export default class Card extends Phaser.GameObjects.Image {
         this.inHand = true;
         this.cardEffect = texture;
         this.index = 0;
+        this.state = 'inDeck';
         this.setInteractive();
         this.setScale(scale, scale);
         scene.add.existing(this);

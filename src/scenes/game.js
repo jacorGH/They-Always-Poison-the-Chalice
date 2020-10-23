@@ -225,9 +225,9 @@ export  default class Game extends Phaser.Scene {
 		}
 		// Func to transition card from deck to hand
 		this.deckToHand = (card) => {
-			// console.log(card.index)
-			this.angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - this.hand.length)-0.06;
+			// console.log(card)
 			this.hand.push(card);
+			this.angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - this.hand.length)-0.06;
 			let ovalAngleVector = [this.horRad * Math.cos(this.angle), - this.verRad * Math.sin(this.angle)];
 			let cardPos = [this.centerCardOval[0] + ovalAngleVector[0], this.centerCardOval[1] + ovalAngleVector[1]];
 			this.time.delayedCall( 300, this.flipCard, [ card ], this);
@@ -241,11 +241,7 @@ export  default class Game extends Phaser.Scene {
 				duration		: 600,
 				onComplete		: this.updateHand,
 			});
-			console.log(card.y);
-			// card.x = cardPos[0];
-			// card.y = cardPos[1];
-			// card.rotation = (0.8 - this.angle/2);
-			// card.rotation = (44.78 - this.angle/2);
+			// console.log(card);
 			this.angle += this.cardSpread;
 		}
 
@@ -262,25 +258,17 @@ export  default class Game extends Phaser.Scene {
 		}
 
 
-		// Card States - Note: Add to card after restructure
-		this.states = Object.freeze({
-            'deckToHand': 0,
-            'inHand'	: 1,
-            'inMotion'	: 2,
-			'inPlay'	: 3,
-			'inDiscard'	: 4,
-		})
-
 		// Func to add a card to hand
 		this.drawCard = () => {
 			if (this.hand.length < this.MAX_HAND) {
 				let card = new Card(this, this.WIDTH - 250, (this.HEIGHT/2 - this.HEIGHT/16), this.deck[0], -0.5, 'add').disableInteractive();
 				//console.log(card.texture)
-				card.setTexture('back')
-				card.index = this.hand.length
+				card.setTexture('back');
+				card.index = this.hand.length;
 				this.deck.shift();
+				card.state = 'deckToHand';
 				// this.hand.push(card);
-				this.deckToHand(card);
+				// this.deckToHand(card);
 			} 
 			if (this.hand.length == this.MAX_HAND) {
 				// Move this to 
@@ -344,7 +332,7 @@ export  default class Game extends Phaser.Scene {
 		this.addDeck();
 		this.addZones();
 
-
+		/*
 		// Change card size on hover
 		this.input.on('gameobjectover', (pointer, gameObject) => {
 			if ((gameObject.cardType) && (gameObject.cardType === 'add')) {
@@ -376,13 +364,14 @@ export  default class Game extends Phaser.Scene {
 				});
 			}
 		})
+		*/
 
 		// Change image tint on drag start
 		this.input.on('dragstart', (pointer, gameObject) => {
 			if ((gameObject.cardType) && (gameObject.cardType == 'add')) {
 				// console.log(gameObject)
 				// gameObject.setTint(0xffff00).setAlpha(0.95);
-				self.children.bringToTop(gameObject);
+				this.children.bringToTop(gameObject);
 				//this.removeItem(this.hand, gameObject);
 			}
 		})
@@ -489,6 +478,70 @@ export  default class Game extends Phaser.Scene {
 
 	update() {
 
-	}
+		// Card States - Note: Add to card after restructure
+		this.states = Object.freeze({
+			'deckToHand': 0,
+			'inHand'	: 1,
+            'onHover'	: 2,
+			'inMotion'	: 3,
+			'toHand'	: 4,
+			'inPlay'	: 5,
+			'inDiscard'	: 6,
+			'inDeck'	: 7,
+		})
 
+		this.children.list.forEach(item => {
+			if ((item.cardType) && (item.cardType === 'add')) {
+				let card = item;
+				// console.log(card.state)
+				switch (card.state){
+					case 'deckToHand':
+						this.deckToHand(card);
+						card.state = 'inHand';
+					case 'inHand':
+						// Change card size on hover
+						card.on('pointerover', () => {
+							this.moveY = card.y;
+							this.tweens.add({
+								targets		: card,
+								scale		: 0.8,
+								ease		: 'Quad',
+								// y			: this.moveY - 50,
+								duration	: 400,
+								state		: 'onHover'
+							});
+							this.children.bringToTop(card);
+						})
+
+					case 'onHover':
+						// Reset card size on off
+						card.on('pointerout', () => {
+							this.tweens.add({
+								targets		: card,
+								scale		: 0.5,
+								ease		: 'Back.easeOut',
+								// y			: this.moveY,
+								duration	: 700,
+								onComplete	: this.updateHand,
+								state		: 'inHand'
+							});
+							// `card.state = 'inHand'
+						})
+
+					case 'inMotion':
+						// console.log(item.state)
+					case 'toHand':
+						// console.log(item.state)
+					case 'inPlay':
+						// console.log(item.state)
+					case 'inDiscard':
+						// console.log(item.state)
+					case 'inDeck':
+						// console.log(item.state)
+
+				}
+				// console.log(item);
+			}
+		})
+	}
 }
