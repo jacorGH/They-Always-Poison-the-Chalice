@@ -416,7 +416,7 @@ export  default class Game extends Phaser.Scene {
 
 		// Locks card to dropZone Neededs to be set to multiple zones one for each cup
 		this.input.on('drop', (pointer, gameObject, dropZone) => {
-			if (!dropZone.isFull && ((gameObject.cardType) && (gameObject.cardType == 'add'))) {
+			if ((!dropZone.isFull) && (gameObject.cardType) && (gameObject.cardType == 'add')) {
 				dropZone.setScale(0.7)
 				gameObject.x = dropZone.x;
 				gameObject.y = dropZone.y;
@@ -467,14 +467,14 @@ export  default class Game extends Phaser.Scene {
 				switch (card.state){
 
 					case 'deckToHand':
-						console.log('deckToHand')
+						// console.log('deckToHand')
 						this.deckToHand(card);
 
 						break;
 					case 'inHand':
 						// Change card size on hover
-						console.log('inHand')
-						this.updateHand();
+						// console.log('inHand')
+						// this.updateHand();
 						card.on('pointerover', () => {
 							card.state = 'onHover';
 							this.tweens.add({
@@ -487,7 +487,7 @@ export  default class Game extends Phaser.Scene {
 						})
 						break;
 					case 'onHover':
-						console.log('onHover')
+						// console.log('onHover')
 						// Reset card size on Hover off
 						card.on('pointerout', () => {
 							card.state = 'inHand';
@@ -500,30 +500,32 @@ export  default class Game extends Phaser.Scene {
 						})
 						//Change card state on drag start
 						card.on('dragstart', () => {
-							console.log('dragging');
+							// console.log('dragging');
 							card.state = 'inMotion';
 							this.tweens.add({
 								targets		: card,
 								scale		: 0.55,
 								ease		: 'Back.easeOut',
-								duration	: 700,
+								duration	: 400,
+								onComplete	: this.updateHand,
 							});
 							// this.removeItem(this.hand, gameObject);
 						})
 
 						break;
 					case 'inMotion':
-						console.log('inMotion')
-						card.currentState = '';
+						// console.log('inMotion')
+						// card.currentState = '';
 						card.on('drag', (pointer) => {
 							// console.log(pointer.position)
+							// this.updateHand()
 							this.removeItem(this.hand, card);
 							card.x = pointer.x;
 							card.y = pointer.y;
 							card.rotation = 0;
 						})
 						card.on('dragend', (pointer, dragx, dragy, dropped) => {
-							console.log(dropped);
+							// console.log(dropped);
 							if (!dropped) {
 								card.state = 'toHand';
 								this.tweens.add({
@@ -538,8 +540,8 @@ export  default class Game extends Phaser.Scene {
 
 						break;
 					case 'toHand':
-						console.log('toHand')
-						console.log(card.index)
+						// console.log('toHand')
+						// console.log(card.index)
 						card.state = 'inHand';
 						this.hand.splice(card.index, 0, card);
 						this.updateHand();
