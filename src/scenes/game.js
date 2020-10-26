@@ -246,8 +246,9 @@ export  default class Game extends Phaser.Scene {
 		// Func to transition card from deck to hand
 		this.deckToHand = (card) => {
 			// console.log(card.state);
-			card.state = 'inHand';
 			this.angle = Math.PI/2 + this.cardSpread*(this.hand.length/2 - this.hand.length)-0.06;
+			card.state = 'inHand';
+			this.hand.push(card);
 			let ovalAngleVector = [this.horRad * Math.cos(this.angle), - this.verRad * Math.sin(this.angle)];
 			let cardPos = [this.centerCardOval[0] + ovalAngleVector[0], this.centerCardOval[1] + ovalAngleVector[1]];
 			this.time.delayedCall( 300, this.flipCard, [ card ], this);
@@ -262,6 +263,18 @@ export  default class Game extends Phaser.Scene {
 				onComplete		: this.updateHand,
 			});
 			this.angle += this.cardSpread;
+			if (this.hand.length == this.MAX_HAND) {
+				// Move this to 
+				this.deckImg.setAlpha(0.75);
+				this.drawText.setVisible(false);
+				// Leave this
+				// this.updateHand();
+				this.handFull = true;
+				this.hand.forEach(card =>{
+					this.time.delayedCall(300, this.activeCard, [card], this);
+					// card.setInteractive();
+				})
+			}
 		}
 
 
@@ -286,23 +299,10 @@ export  default class Game extends Phaser.Scene {
 				card.setTexture('back');
 				card.index = this.hand.length;
 				this.deck.shift();
-				this.hand.push(card);
 				card.state = 'deckToHand';
 				// this.hand.push(card);
 				// this.deckToHand(card);
 			} 
-			if (this.hand.length == this.MAX_HAND) {
-				// Move this to 
-				this.deckImg.setAlpha(0.75);
-				this.drawText.setVisible(false);
-				// Leave this
-				this.updateHand();
-				this.handFull = true;
-				this.hand.forEach(card =>{
-					this.time.delayedCall(300, this.activeCard, [card], this);
-					// card.setInteractive();
-				})
-			}
 		}
 		
 		// Func add Cups to table
@@ -474,17 +474,23 @@ export  default class Game extends Phaser.Scene {
 					case 'inHand':
 						// Change card size on hover
 						console.log('inHand')
-						this.updateHand();
+						// this.updateHand();
+						card.on('gameobjectover', (pointer, gameObject) => {
+							console.log(gameObject);
+						})
 						card.on('pointerover', () => {
 							card.state = 'onHover';
 							this.tweens.add({
 								targets		: card,
+								// y			: card.y - 50,
 								scale		: 0.8,
 								ease		: 'Quad',
 								duration	: 400,
+								onStart  : this.updateHand,
 							});
 							this.children.bringToTop(card);
 						})
+
 						break;
 					case 'onHover':
 						console.log('onHover')
@@ -497,6 +503,7 @@ export  default class Game extends Phaser.Scene {
 								ease		: 'Back.easeOut',
 								duration	: 700,
 							});
+							this.updateHand();
 						})
 						//Change card state on drag start
 						card.on('dragstart', () => {
@@ -507,6 +514,7 @@ export  default class Game extends Phaser.Scene {
 								scale		: 0.55,
 								ease		: 'Back.easeOut',
 								duration	: 700,
+								onComplete	: this.updateHand,
 							});
 							// this.removeItem(this.hand, gameObject);
 						})
@@ -514,7 +522,7 @@ export  default class Game extends Phaser.Scene {
 						break;
 					case 'inMotion':
 						console.log('inMotion')
-						card.currentState = '';
+						// card.currentState = '';
 						card.on('drag', (pointer) => {
 							// console.log(pointer.position)
 							this.removeItem(this.hand, card);
@@ -525,12 +533,14 @@ export  default class Game extends Phaser.Scene {
 						card.on('dragend', (pointer, dragx, dragy, dropped) => {
 							console.log(dropped);
 							if (!dropped) {
+								this.children.bringToTop(card);
 								card.state = 'toHand';
 								this.tweens.add({
 									targets		: card,
 									scale		: 0.5,
 									ease		: 'Back.easeOut',
 									duration	: 700,
+									onComplete	: this.updateHand,
 								});
 								// this.removeItem(this.hand, gameObject);
 							}
@@ -541,8 +551,10 @@ export  default class Game extends Phaser.Scene {
 						console.log('toHand')
 						console.log(card.index)
 						card.state = 'inHand';
-						this.hand.splice(card.index, 0, card);
-						this.updateHand();
+						if (!this.hand.includes(card)) {
+							this.hand.splice(card.index, 0, card);
+							this.updateHand();
+						}
 						// console.log(item.state)
 
 						break;
