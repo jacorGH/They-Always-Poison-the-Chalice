@@ -11,6 +11,7 @@ export default class Card extends Phaser.GameObjects.Image {
             this.setInteractive();
             scene.input.setDraggable(this);
         }
+
         this.checkState = () => {
             if (this.state != this.currentState) {
                 this.currentState = this.state;
